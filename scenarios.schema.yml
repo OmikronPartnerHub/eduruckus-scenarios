@@ -1,0 +1,284 @@
+---
+$schema: "http://json-schema.org/draft-04/schema"
+id: "http://stsci.edu/schemas/yaml-schema/draft-01"
+title:
+  EduRuckus configuration schema
+description: |
+  Standard configuration elements for the EduRuckus scenarios.
+  Configures VLANs, ports, port-channels, and basic routing.
+  Also provides a freetext KV-pair for further configuration.
+type: object
+required:
+  - name
+  - description
+  - switches
+  - vlans
+additionalProperties: false
+properties:
+  name:
+    type: string
+    minLength: 3
+    maxLength: 32
+    description: The scenario's short name, e.g. "Multiarea OSPF"
+  difficulty:
+    type: integer
+    minimum: 1
+    maximum: 3
+    description: "The difficulty level. 1: beginner; 2: advanced; 3: expert"
+  description:
+    type: string
+    description: A longer description of the scenario
+  vlans:
+    type: array
+    items:
+      type: object
+      required:
+        - id
+        - name
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 4094
+          description: VLAN ID (number)
+        name:
+          type: string
+          minLength: 3
+          maxLength: 32
+          description: The name of the VLAN
+  switches:
+    type: array
+    minItems: 2
+    items:
+      type: object
+      required:
+        - number
+        - ports
+      additionalProperties: false
+      properties:
+        number:
+          type: integer
+          minimum: 1
+          maximum: 8
+          description: |
+            The number of the switch. The top switch in the rack gets 1, then it's incremented for each switch below.
+            The hostname (educukus-#) is generated from this too.
+        ports:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - id
+            additionalProperties: false
+            description: The list of configured physical ports, loopback adapters, and SVI's.
+            properties:
+              id:
+                type: string
+                pattern: "(eth(ernet)?\\d/\\d{1,2}/\\d{1,2})|(lo(opback)?\\d{1,4})|(v(irtual)?e(thernet)?\\d{1,4})"
+              description:
+                type: string
+                description: Port description, usually indicates where the port is connected to.
+              mode:
+                enum:
+                  - switched
+                  - routed
+                default: switched
+                description: Port mode (switched, routed), applies to ethernet ports and port-channels
+              speed:
+                enum:
+                  - auto
+                  - 10-half
+                  - 10-full
+                  - 100-half
+                  - 100-full
+                  - 1000-full
+                  - 1000-full-master
+                  - 1000-full-slave
+                  - 2500-full
+                  - 5000-full
+                  - 10g-full
+                  - 25g-full
+                  - 40g-full
+                  - 100g-full
+                default: auto
+                description: Speed / duplexity
+              untagged_vlan:
+                type: integer
+                minimum: 1
+                maximum: 4094
+                description: |
+                  Untagged VLAN ID. Mandatory for switched mode.
+              tagged_vlan:
+                type: string
+                pattern: "^\\d{1,4}( \\d{1,4})*"
+                description: |
+                  Tagged VLAN ID. The port becomes access port with an untagged_vlan and no tagged_vlan.
+                  If both untagged_vlan and tagged_vlan are defined, the port becomes trunk with the
+                  untagged_vlan being the native VLAN.
+              ip:
+                type: string
+                pattern: "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}\\/([8-9]|[1-2][0-9]|3[0-2])$"
+                description: |
+                  `IP address/subnet` of the interface, applies to routed ethernet ports, port channels, ve's, and loopback interfaces.
+                  Example: 10.14.129.4/24
+              ospf:
+                type: object
+                required:
+                  - area
+                properties:
+                  area:
+                    type: [integer, string]
+                    minimum: 0
+                    maximum: 4294967295
+                    pattern: "^\\d{1,3}((.\\d{1,3}){3})?$"
+                    description: OSPF area where the interface belongs to, in decimal or dotted decimal format.
+                  p2p:
+                    type: boolean
+                    default: false
+                    description: If true, the network type is set to point-to-point
+                  passive:
+                    type: boolean
+                    description: Sets the interface to OSPF passive mode
+                  config:
+                    type: string
+                    description: Further interface-level OSPF configuration.
+              mtu:
+                type: integer
+                minimum: 64
+                maximum: 9216
+                default: 1500
+                description: MTU size
+              config:
+                type: string
+                description: Interface-level free text config for features not built into the automation
+        lag:
+          type: array
+          minItems: 1
+          description: Port-channel configuration
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - ports
+            additionalProperties: false
+            description: The list of port-channels (Link Aggregation Groups)
+            properties:
+              id:
+                type: integer
+                minimum: 1
+                maximum: 4096
+                description: The LAG's number
+              name:
+                type: string
+                minLength: 3
+                maxLength: 32
+                description: A short name of the LAG
+              type:
+                enum:
+                  - dynamic
+                  - static
+                default: dynamic
+                description: Set whether the LAG should be static or use LACP. The latter is the default.
+              mode:
+                enum:
+                  - switched
+                  - routed
+                default: switched
+                description: Port mode (switched, routed), applies to ethernet ports and port-channels
+              untagged_vlan:
+                type: integer
+                minimum: 1
+                maximum: 4094
+                description: |
+                  Untagged VLAN ID. Mandatory for switched mode.
+              tagged_vlan:
+                type: string
+                pattern: "^\\d{1,4}( \\d{1,4})*"
+                description: |
+                  Tagged VLAN ID. The port becomes access port with an untagged_vlan and no tagged_vlan.
+                  If both untagged_vlan and tagged_vlan are defined, the port becomes trunk with the
+                  untagged_vlan being the native VLAN.
+              ip:
+                type: string
+                pattern: "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}\\/([8-9]|[1-2][0-9]|3[0-2])$"
+                description: |
+                  `IP address/subnet` of the interface, applies to routed ethernet ports, port channels, ve's, and loopback interfaces.
+                  Example: 10.14.129.4/24
+              ospf:
+                type: object
+                required:
+                  - area
+                properties:
+                  area:
+                    type: [integer, string]
+                    minimum: 0
+                    maximum: 4294967295
+                    pattern: "^\\d{1,3}((.\\d{1,3}){3})?$"
+                    description: OSPF area where the interface belongs to, in decimal or dotted decimal format.
+                  p2p:
+                    type: boolean
+                    default: false
+                    description: If true, the network type is set to point-to-point.
+                  passive:
+                    type: boolean
+                    description: Sets the interface to OSPF passive mode.
+                  config:
+                    type: string
+                    description: Further interface-level OSPF configuration.
+              mtu:
+                type: integer
+                minimum: 64
+                maximum: 9216
+                default: 1500
+                description: MTU size
+              ports:
+                type: array
+                minItems: 1
+                description: The list of port-channel members
+                items:
+                  type: string
+                  pattern: "eth\\d/\\d{1,2}"
+                  description: Port names, e.g. eth 1/1/20
+              config:
+                type: string
+                description: LAG-level free text config for features not built into the automation
+        ospf:
+          type: object
+          required:
+            - areas
+          additionalProperties: false
+          properties:
+            areas:
+              type: array
+              description: A list of OSPF areas
+              minItems: 1
+              items:
+                type: object
+                required:
+                  - area
+                additionalProperties: false
+                properties:
+                  area:
+                    type: [integer, string]
+                    minimum: 0
+                    maximum: 4294967295
+                    pattern: "^\\d{1,3}((.\\d{1,3}){3})?$"
+                    description: OSPF area in decimal or dotted decimal format
+                  type:
+                    enum:
+                      - stub
+                      - nssa
+                    description: OSPF area type. If not specified, the area is set to normal.
+            router-id:
+              type: string
+              pattern: "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}"
+              description: Router-ID (IP address)
+            config:
+              type: string
+              description: Free text config for OSPF features not built into the automation
+        config:
+          type: string
+          description: Switch-level free text config for features not built into the automation

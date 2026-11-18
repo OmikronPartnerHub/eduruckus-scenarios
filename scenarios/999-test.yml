@@ -1,0 +1,77 @@
+name: Test scenario
+difficulty: 2
+description: This is a test scenario
+vlans:
+  - id: 10
+    name: Server
+  - id: 20
+    name: Phone
+switches:
+  - number: 1
+    ports:
+      - id: eth1/1/1
+        mode: routed
+        ip: 10.10.200.1/30
+        ospf:
+          area: 0
+          p2p: true
+        description: router,gi1/1
+      - id: eth1/1/2
+        untagged_vlan: 10
+        description: Server1
+        mtu: 9216
+        config: |
+          stp-bpdu-guard
+          spanning-tree root-protect
+      - id: lo0
+        ip: 10.255.254.1/32
+        ospf:
+          area: 0
+          passive: true
+    lag:
+      - id: 10
+        name: Uplink
+        ports:
+          - eth1/1/47
+          - eth1/1/48
+        untagged_vlan: 2
+        tagged_vlan: 10 20
+        mtu: 9216
+    ospf:
+      areas:
+        - area: 0
+      router-id: 10.255.254.1
+  - number: 2
+    ports:
+      - id: eth1/1/1
+        mode: routed
+        ip: 10.10.200.5/30
+        ospf:
+          area: 0
+          p2p: true
+        description: router2,gi1/1
+      - id: eth1/1/2
+        untagged_vlan: 10
+        description: Server2
+        mtu: 9216
+        config: |
+          stp-bpdu-guard
+          spanning-tree root-protect
+      - id: lo0
+        ip: 10.255.254.2/32
+        ospf:
+          area: 0
+          passive: true
+    lag:
+      - id: 10
+        name: Uplink
+        ports:
+          - eth1/1/47
+          - eth1/1/48
+        untagged_vlan: 2
+        tagged_vlan: 10 20
+        mtu: 9216
+    ospf:
+      areas:
+        - area: 0
+      router-id: 10.255.254.2
