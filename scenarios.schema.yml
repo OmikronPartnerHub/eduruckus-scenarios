@@ -254,13 +254,13 @@ properties:
                 pattern: "([A-Za-z0-9\\-_]+)"
                 maxLength: 32
                 description: The outgoing ACL's name. Must match the name created in global config mode.
-              ports:
+              members:
                 type: array
                 minItems: 1
                 description: The list of port-channel members
                 items:
                   type: string
-                  pattern: "eth\\d/\\d{1,2}"
+                  pattern: "eth(ernet)?\\d/\\d{1,2}/\\d{1,2}"
                   description: Port names, e.g. eth 1/1/20
               config:
                 type: string

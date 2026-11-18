@@ -31,7 +31,7 @@ switches:
     lag:
       - id: 10
         name: Uplink
-        ports:
+        members:
           - eth1/1/47
           - eth1/1/48
         untagged_vlan: 2
@@ -65,7 +65,7 @@ switches:
     lag:
       - id: 10
         name: Uplink
-        ports:
+        members:
           - eth1/1/47
           - eth1/1/48
         untagged_vlan: 2
