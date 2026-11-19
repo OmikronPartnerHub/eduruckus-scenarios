@@ -1,6 +1,6 @@
 name: Test scenario
 difficulty: 2
-description: This is a test scenario
+description: This is a test scenario.
 vlans:
   - id: 10
     name: Server
@@ -8,10 +8,12 @@ vlans:
     name: Phone
 switches:
   - number: 1
+    jumbo: true
     ports:
       - id: eth1/1/1
         mode: routed
         ip: 10.10.200.1/30
+        ipv6: 2001:db8::32da:2/64
         ospf:
           area: 0
           p2p: true
@@ -19,7 +21,6 @@ switches:
       - id: eth1/1/2
         untagged_vlan: 10
         description: Server1
-        mtu: 9216
         config: |
           stp-bpdu-guard
           spanning-tree root-protect
@@ -28,7 +29,7 @@ switches:
         speed: 1000-full
         acl_in: Test_ACL
         acl_out: Test_ACL
-      - id: lo0
+      - id: lo1
         ip: 10.255.254.1/32
         description: Global loopback
         ospf:
@@ -78,11 +79,10 @@ switches:
       - id: eth1/1/2
         untagged_vlan: 10
         description: Server2
-        mtu: 9216
         config: |
           stp-bpdu-guard
           spanning-tree root-protect
-      - id: lo0
+      - id: lo1
         ip: 10.255.254.2/32
         description: Global loopback
         ospf:
@@ -96,7 +96,6 @@ switches:
           - eth1/1/48
         untagged_vlan: 2
         tagged_vlan: 10 20
-        mtu: 9216
     ospf:
       areas:
         - area: 0
