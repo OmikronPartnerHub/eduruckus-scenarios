@@ -19,15 +19,15 @@ properties:
     type: string
     minLength: 3
     maxLength: 32
-    description: The scenario's short name, e.g. "Multiarea OSPF"
+    description: The scenario's short name, e.g. "Multiarea OSPF".
   difficulty:
     type: integer
     minimum: 1
     maximum: 3
-    description: "The difficulty level. 1: beginner; 2: advanced; 3: expert"
+    description: "The difficulty level. 1: beginner; 2: advanced; 3: expert."
   description:
     type: string
-    description: A longer description of the scenario
+    description: A longer description of the scenario.
   vlans:
     type: array
     items:
@@ -41,12 +41,12 @@ properties:
           type: integer
           minimum: 1
           maximum: 4094
-          description: VLAN ID (number)
+          description: VLAN ID (number).
         name:
           type: string
           minLength: 3
           maxLength: 32
-          description: The name of the VLAN
+          description: The name of the VLAN.
   switches:
     type: array
     minItems: 2
@@ -73,20 +73,20 @@ properties:
               - id
               - description
             additionalProperties: false
-            description: The list of configured physical ports, loopback adapters, and SVI's.
+            description: The list of configured physical ports, loopback adapters, and SVI's..
             properties:
               id:
                 type: string
                 pattern: "(eth(ernet)?\\d/\\d{1,2}/\\d{1,2})|(lo(opback)?\\d{1,4})|(v(irtual)?e(thernet)?\\d{1,4})"
               description:
                 type: string
-                description: Port description, usually indicates where the port is connected to.
+                description: Port description, usually indicates where the port is connected to..
               mode:
                 enum:
                   - switched
                   - routed
                 default: switched
-                description: Port mode (switched, routed), applies to ethernet ports and port-channels
+                description: Port mode (switched, routed), applies to ethernet ports and port-channels.
               speed:
                 enum:
                   - auto
@@ -104,7 +104,7 @@ properties:
                   - 40g-full
                   - 100g-full
                 default: auto
-                description: Speed / duplexity
+                description: Speed / duplexity.
               untagged_vlan:
                 type: integer
                 minimum: 1
@@ -127,7 +127,7 @@ properties:
               ipv6:
                 type: string
                 pattern: "^((([0-9A-Fa-f]{1,4}:){1,6}:)|(([0-9A-Fa-f]{1,4}:){7}))([0-9A-Fa-f]{1,4})$"
-                description: IPv6 address of the interface. Applies to routed ethernet ports, port channels, ve's, and loopback interfaces.
+                description: IPv6 address of the interface. Applies to routed ethernet ports, port channels, ve's, and loopback interfaces..
               ospf:
                 type: object
                 required:
@@ -138,105 +138,7 @@ properties:
                     minimum: 0
                     maximum: 4294967295
                     pattern: "^\\d{1,3}((.\\d{1,3}){3})?$"
-                    description: OSPF area where the interface belongs to, in decimal or dotted decimal format.
-                  p2p:
-                    type: boolean
-                    default: false
-                    description: If true, the network type is set to point-to-point
-                  passive:
-                    type: boolean
-                    description: Sets the interface to OSPF passive mode
-                  config:
-                    type: string
-                    description: Further interface-level OSPF configuration.
-              mtu:
-                type: integer
-                minimum: 64
-                maximum: 9216
-                default: 1500
-                description: MTU size
-              acl_in:
-                type: string
-                pattern: "([A-Za-z0-9\\-_]+)"
-                maxLength: 32
-                description: The incoming ACL's name. Must match the name created in global config mode.
-              acl_out:
-                type: string
-                pattern: "([A-Za-z0-9\\-_]+)"
-                maxLength: 32
-                description: The outgoing ACL's name. Must match the name created in global config mode.
-              config:
-                type: string
-                description: Interface-level free text config for features not built into the automation
-        lag:
-          type: array
-          minItems: 1
-          description: Port-channel configuration
-          items:
-            type: object
-            required:
-              - id
-              - name
-              - members
-            additionalProperties: false
-            description: The list of port-channels (Link Aggregation Groups)
-            properties:
-              id:
-                type: integer
-                minimum: 1
-                maximum: 4096
-                description: The LAG's number
-              name:
-                type: string
-                minLength: 3
-                maxLength: 32
-                description: A short name of the LAG
-              type:
-                enum:
-                  - dynamic
-                  - static
-                default: dynamic
-                description: Set whether the LAG should be static or use LACP. The latter is the default.
-              mode:
-                enum:
-                  - switched
-                  - routed
-                default: switched
-                description: Port mode (switched, routed), applies to ethernet ports and port-channels
-              untagged_vlan:
-                type: integer
-                minimum: 1
-                maximum: 4094
-                description: |
-                  Untagged VLAN ID. Mandatory for switched mode.
-              tagged_vlan:
-                type: string
-                pattern: "^\\d{1,4}( \\d{1,4})*"
-                description: |
-                  Tagged VLAN ID. The port becomes access port with an untagged_vlan and no tagged_vlan.
-                  If both untagged_vlan and tagged_vlan are defined, the port becomes trunk with the
-                  untagged_vlan being the native VLAN.
-              ip:
-                type: string
-                pattern: "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}\\/([8-9]|[1-2][0-9]|3[0-2])$"
-                description: |
-                  `IP address/subnet` of the interface. Applies to routed ethernet ports, port channels, ve's, and loopback interfaces.
-                  Example: 10.14.129.4/24
-              ipv6:
-                type: string
-                pattern: "^((([0-9A-Fa-f]{1,4}:){1,6}:)|(([0-9A-Fa-f]{1,4}:){7}))([0-9A-Fa-f]{1,4})$"
-                description: IPv6 address of the interface. Applies to routed ethernet ports, port channels, ve's, and loopback interfaces.
-              ospf:
-                type: object
-                required:
-                  - area
-                properties:
-                  area:
-                    type: [integer, string]
-                    minimum: 0
-                    maximum: 4294967295
-                    pattern: "^\\d{1,3}((.\\d{1,3}){3})?$"
-                    description: OSPF area where the interface belongs to, in decimal or dotted decimal format.
+                    description: OSPF area where the interface belongs to, in decimal or dotted decimal format..
                   p2p:
                     type: boolean
                     default: false
@@ -246,34 +148,132 @@ properties:
                     description: Sets the interface to OSPF passive mode.
                   config:
                     type: string
-                    description: Further interface-level OSPF configuration.
+                    description: Further interface-level OSPF configuration..
               mtu:
                 type: integer
                 minimum: 64
                 maximum: 9216
                 default: 1500
-                description: MTU size
+                description: MTU size.
               acl_in:
                 type: string
                 pattern: "([A-Za-z0-9\\-_]+)"
                 maxLength: 32
-                description: The incoming ACL's name. Must match the name created in global config mode.
+                description: The incoming ACL's name. Must match the name created in global config mode..
               acl_out:
                 type: string
                 pattern: "([A-Za-z0-9\\-_]+)"
                 maxLength: 32
-                description: The outgoing ACL's name. Must match the name created in global config mode.
+                description: The outgoing ACL's name. Must match the name created in global config mode..
+              config:
+                type: string
+                description: Interface-level freetext config.
+        lag:
+          type: array
+          minItems: 1
+          description: Port-channel configuration.
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - members
+            additionalProperties: false
+            description: The list of port-channels (Link Aggregation Groups).
+            properties:
+              id:
+                type: integer
+                minimum: 1
+                maximum: 4096
+                description: The LAG's number.
+              name:
+                type: string
+                minLength: 3
+                maxLength: 32
+                description: A short name of the LAG.
+              type:
+                enum:
+                  - dynamic
+                  - static
+                default: dynamic
+                description: Set whether the LAG should be static or use LACP. The latter is the default..
+              mode:
+                enum:
+                  - switched
+                  - routed
+                default: switched
+                description: Port mode (switched, routed), applies to ethernet ports and port-channels.
+              untagged_vlan:
+                type: integer
+                minimum: 1
+                maximum: 4094
+                description: |
+                  Untagged VLAN ID. Mandatory for switched mode.
+              tagged_vlan:
+                type: string
+                pattern: "^\\d{1,4}( \\d{1,4})*"
+                description: |
+                  Tagged VLAN ID. The port becomes access port with an untagged_vlan and no tagged_vlan.
+                  If both untagged_vlan and tagged_vlan are defined, the port becomes trunk with the
+                  untagged_vlan being the native VLAN.
+              ip:
+                type: string
+                pattern: "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}\\/([8-9]|[1-2][0-9]|3[0-2])$"
+                description: |
+                  `IP address/subnet` of the interface. Applies to routed ethernet ports, port channels, ve's, and loopback interfaces.
+                  Example: 10.14.129.4/24
+              ipv6:
+                type: string
+                pattern: "^((([0-9A-Fa-f]{1,4}:){1,6}:)|(([0-9A-Fa-f]{1,4}:){7}))([0-9A-Fa-f]{1,4})$"
+                description: IPv6 address of the interface. Applies to routed ethernet ports, port channels, ve's, and loopback interfaces..
+              ospf:
+                type: object
+                required:
+                  - area
+                properties:
+                  area:
+                    type: [integer, string]
+                    minimum: 0
+                    maximum: 4294967295
+                    pattern: "^\\d{1,3}((.\\d{1,3}){3})?$"
+                    description: OSPF area where the interface belongs to, in decimal or dotted decimal format..
+                  p2p:
+                    type: boolean
+                    default: false
+                    description: If true, the network type is set to point-to-point..
+                  passive:
+                    type: boolean
+                    description: Sets the interface to OSPF passive mode..
+                  config:
+                    type: string
+                    description: Further interface-level OSPF configuration..
+              mtu:
+                type: integer
+                minimum: 64
+                maximum: 9216
+                default: 1500
+                description: MTU size.
+              acl_in:
+                type: string
+                pattern: "([A-Za-z0-9\\-_]+)"
+                maxLength: 32
+                description: The incoming ACL's name. Must match the name created in global config mode..
+              acl_out:
+                type: string
+                pattern: "([A-Za-z0-9\\-_]+)"
+                maxLength: 32
+                description: The outgoing ACL's name. Must match the name created in global config mode..
               members:
                 type: array
                 minItems: 1
-                description: The list of port-channel members
+                description: The list of port-channel members.
                 items:
                   type: string
                   pattern: "eth(ernet)?\\d/\\d{1,2}/\\d{1,2}"
-                  description: Port names, e.g. eth 1/1/20
+                  description: Port names, e.g. eth 1/1/20.
               config:
                 type: string
-                description: LAG-level free text config for features not built into the automation
+                description: LAG-level freetext config.
         acls:
           type: array
           minItems: 1
@@ -287,10 +287,10 @@ properties:
               name:
                 type: string
                 pattern: "([A-Za-z0-9\\-_]+)"
-                description: The ACL's name.
+                description: The ACL's name..
               lines:
                 type: array
-                description: ACL entries. Each item is a line, order matters.
+                description: ACL entries. Each item is a line, order matters..
                 minItems: 1
                 items:
                   type: string
@@ -302,7 +302,7 @@ properties:
           properties:
             areas:
               type: array
-              description: A list of OSPF areas
+              description: A list of OSPF areas.
               minItems: 1
               items:
                 type: object
@@ -315,19 +315,19 @@ properties:
                     minimum: 0
                     maximum: 4294967295
                     pattern: "^\\d{1,3}((.\\d{1,3}){3})?$"
-                    description: OSPF area in decimal or dotted decimal format
+                    description: OSPF area in decimal or dotted decimal format.
                   type:
                     enum:
                       - stub
                       - nssa
-                    description: OSPF area type. If not specified, the area is set to normal.
+                    description: OSPF area type. If not specified, the area is set to normal..
             router-id:
               type: string
               pattern: "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}"
-              description: Router-ID (IP address)
+              description: Router-ID (IP address).
             config:
               type: string
-              description: Free text config for OSPF features not built into the automation
+              description: Freetext config for OSPF features..
         bgp:
           type: object
           required:
@@ -340,15 +340,15 @@ properties:
               minimum: 1
               maximum: 4294967295
               pattern: "\\d{1,5}\\.\\d{1,5}"
-              description: Local AS number in decimal or dotted decimal format.
+              description: Local AS number in decimal or dotted decimal format..
             router-id:
               type: string
               pattern: "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}"
-              description: Router-ID (IP address)
+              description: Router-ID (IP address).
             neighbors:
               type: array
               minItems: 1
-              description: Global neighbors.
+              description: Global neighbors..
               items:
                 type: object
                 required:
@@ -359,34 +359,34 @@ properties:
                   ip_address:
                     type: string
                     pattern: "^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))|(((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4})$"
-                    description: IPv4 or IPv6 address of the neighbor.
+                    description: IPv4 or IPv6 address of the neighbor..
                   remote-as:
                     type: [integer, string]
                     minimum: 1
                     maximum: 4294967295
                     pattern: "\\d{1,5}\\.\\d{1,5}"
-                    description: Neighbor's AS number in decimal or dotted decimal format.
+                    description: Neighbor's AS number in decimal or dotted decimal format..
                   activate:
                     type: boolean
-                    description: Setting it to `false` adds `no neighbor {address} activate` to the global BGP config.
+                    description: Setting it to `false` adds `no neighbor {address} activate` to the global BGP config..
                   config:
                     type: string
-                    description: Freetext configuration for the neighbor (e.g. route maps)
+                    description: Freetext configuration for the neighbor (e.g. route maps).
             networks_ipv4:
               type: array
-              description: List of IPv4 networks advertised in the global VRF
+              description: List of IPv4 networks advertised in the global VRF.
               items:
                 type: string
                 pattern: "^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}\\/([8-9]|[1-2][0-9]|3[0-2])$"
             networks_ipv6:
               type: array
-              description: List of IPv4 networks advertised in the global VRF
+              description: List of IPv4 networks advertised in the global VRF.
               items:
                 type: string
                 pattern: "(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
             config:
               type: string
-              description: Freetext config for BGP
+              description: Freetext config for BGP.
         config:
           type: string
-          description: Switch-level freetext config for features not built into the automation
+          description: Switch-level freetext config.
