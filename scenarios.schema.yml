@@ -1,6 +1,6 @@
 ---
 $schema: "http://json-schema.org/draft-04/schema"
-id: "http://stsci.edu/schemas/yaml-schema/draft-01"
+id: "https://omikron.hu/schemas/eduruckus/draft-01"
 title:
   EduRuckus configuration schema
 description: |
