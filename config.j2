@@ -1,7 +1,10 @@
-{#-
+#jinja2: lstrip_blocks: "True", trim_blocks: "True"
+{#
   RUCKUS FastIron 10.0.20 configuration; render once per switch:
 
     template.render(vlans=scenario.get('vlans', []), **scenario['switches'][0])
+
+  Render with lstrip_blocks=True and trim_blocks=True.
 
   Uses standard Jinja2 filters only; supports StrictUndefined. Schema defaults
   are applied here because JSON Schema validation does not populate defaults.
@@ -23,267 +26,267 @@
   - FastIron requires a metric for stub/NSSA areas; use the standard cost 1.
   - Hardware must support the selected speeds, LAG IDs, MTUs and features.
     jumbo changes may require saving and reloading outside this template.
--#}
-{% macro interface_name(id) -%}
-{% if id.startswith('eth') -%}
-ethernet {{ id | replace('ethernet', '') | replace('eth', '') }}
-{%- elif id.startswith('lo') -%}
-loopback {{ id | replace('loopback', '') | replace('lo', '') }}
-{%- else -%}
-ve {{ id | replace('virtual', '') | replace('ethernet', '') | replace('v', '') | replace('e', '') }}
-{%- endif %}
-{%- endmacro -%}
+#}
+{% macro interface_name(id) %}
+  {% if id.startswith('eth') %}
+    {{- 'ethernet ' ~ (id | replace('ethernet', '') | replace('eth', '')) -}}
+  {% elif id.startswith('lo') %}
+    {{- 'loopback ' ~ (id | replace('loopback', '') | replace('lo', '')) -}}
+  {% else %}
+    {{- 've ' ~ (id | replace('virtual', '') | replace('ethernet', '') | replace('v', '') | replace('e', '')) -}}
+  {% endif %}
+{% endmacro -%}
 
-{% macro interface_config(item, routed, loopback=false) -%}
-{% if routed -%}
-{% if item.ip is defined -%}
-{{ '  ' }}ip address {{ item.ip }}
-{% endif -%}
-{% if item.ipv6 is defined -%}
-{{ '  ' }}ipv6 address {{ item.ipv6 }}
-{% endif -%}
-{% if not loopback -%}
-{% if item.ip is defined -%}
-{{ '  ' }}ip mtu {{ item.mtu | default(1500) }}
-{% endif -%}
-{% if item.ipv6 is defined -%}
-{{ '  ' }}ipv6 mtu {{ item.mtu | default(1500) }}
-{% endif -%}
-{% endif -%}
-{% if item.ospf is defined -%}
-{{ '  ' }}ip ospf area {{ item.ospf.area }}
-{% if item.ospf.p2p | default(false) -%}
-{{ '  ' }}ip ospf network point-to-point
-{% elif not loopback -%}
-{{ '  ' }}no ip ospf network
-{% endif -%}
-{% if item.ospf.passive is defined -%}
-{% if item.ospf.passive -%}
-{{ '  ' }}ip ospf passive
-{% else -%}
-{{ '  ' }}no ip ospf passive
-{% endif -%}
-{% endif -%}
-{% if item.ospf.config is defined -%}
+{% macro interface_config(item, routed, loopback=false) %}
+  {% if routed %}
+    {% if item.ip is defined %}
+  ip address {{ item.ip }}
+    {% endif %}
+    {% if item.ipv6 is defined %}
+  ipv6 address {{ item.ipv6 }}
+    {% endif %}
+    {% if not loopback %}
+      {% if item.ip is defined %}
+  ip mtu {{ item.mtu | default(1500) }}
+      {% endif %}
+      {% if item.ipv6 is defined %}
+  ipv6 mtu {{ item.mtu | default(1500) }}
+      {% endif %}
+    {% endif %}
+    {% if item.ospf is defined %}
+  ip ospf area {{ item.ospf.area }}
+      {% if item.ospf.p2p | default(false) %}
+  ip ospf network point-to-point
+      {% elif not loopback %}
+  no ip ospf network
+      {% endif %}
+      {% if item.ospf.passive is defined %}
+        {% if item.ospf.passive %}
+  ip ospf passive
+        {% else %}
+  no ip ospf passive
+        {% endif %}
+      {% endif %}
+      {% if item.ospf.config is defined %}
 {{ item.ospf.config | trim | indent(2, true) }}
-{% endif -%}
-{% endif -%}
-{% endif -%}
-{% if item.acl_in is defined -%}
-{{ '  ' }}ip access-group {{ item.acl_in }} in
-{% endif -%}
-{% if item.acl_out is defined -%}
-{{ '  ' }}ip access-group {{ item.acl_out }} out
-{% endif -%}
-{% if item.config is defined -%}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+  {% if item.acl_in is defined %}
+  ip access-group {{ item.acl_in }} in
+  {% endif %}
+  {% if item.acl_out is defined %}
+  ip access-group {{ item.acl_out }} out
+  {% endif %}
+  {% if item.config is defined %}
 {{ item.config | trim | indent(2, true) }}
-{% endif -%}
-{%- endmacro -%}
+  {% endif %}
+{% endmacro -%}
 
 {# Collect dependencies before rendering so VLANs, ACLs and OSPF areas exist
-   before interfaces refer to them. A referenced VLAN need not have a name. -#}
-{% set state = namespace(vlan_ids=[], ospf_areas=[], ipv6=false) -%}
-{% set physical_ports = [] -%}
-{% for port in ports -%}
-{% if port.id.startswith('eth') -%}
-{% set _ = physical_ports.append(port) -%}
-{% elif port.id.startswith('v') -%}
-{% set state.vlan_ids = state.vlan_ids + [interface_name(port.id).split()[1] | int] -%}
-{% endif -%}
-{% if not port.id.startswith('eth') or port.mode | default('switched') == 'routed' -%}
-{% if port.ipv6 is defined -%}
-{% set state.ipv6 = true -%}
-{% endif -%}
-{% if port.ospf is defined -%}
-{% set state.ospf_areas = state.ospf_areas + [port.ospf.area | string] -%}
-{% endif -%}
-{% endif -%}
-{% endfor -%}
-{% for vlan in vlans | default([]) -%}
-{% set state.vlan_ids = state.vlan_ids + [vlan.id] -%}
-{% endfor -%}
-{% for item in physical_ports + (lag | default([])) -%}
-{% if item.mode | default('switched') == 'switched' -%}
-{% if item.untagged_vlan is defined -%}
-{% set state.vlan_ids = state.vlan_ids + [item.untagged_vlan] -%}
-{% endif -%}
-{% if item.tagged_vlan is defined -%}
-{% set state.vlan_ids = state.vlan_ids + (item.tagged_vlan.split() | map('int') | list) -%}
-{% endif -%}
-{% endif -%}
-{% endfor -%}
-{% for item in lag | default([]) -%}
-{% if item.mode | default('switched') == 'routed' -%}
-{% if item.ipv6 is defined -%}
-{% set state.ipv6 = true -%}
-{% endif -%}
-{% if item.ospf is defined -%}
-{% set state.ospf_areas = state.ospf_areas + [item.ospf.area | string] -%}
-{% endif -%}
-{% endif -%}
-{% endfor -%}
-{% if bgp is defined -%}
-{% if bgp.networks_ipv6 | default([]) -%}
-{% set state.ipv6 = true -%}
-{% endif -%}
-{% for neighbor in bgp.neighbors -%}
-{% if ':' in neighbor.ip_address -%}
-{% set state.ipv6 = true -%}
-{% endif -%}
-{% endfor -%}
-{% endif -%}
+   before interfaces refer to them. A referenced VLAN need not have a name. #}
+{% set state = namespace(vlan_ids=[], ospf_areas=[], ipv6=false) %}
+{% set physical_ports = [] %}
+{% for port in ports %}
+  {% if port.id.startswith('eth') %}
+    {% set _ = physical_ports.append(port) %}
+  {% elif port.id.startswith('v') %}
+    {% set state.vlan_ids = state.vlan_ids + [interface_name(port.id).split()[1] | int] %}
+  {% endif %}
+  {% if not port.id.startswith('eth') or port.mode | default('switched') == 'routed' %}
+    {% if port.ipv6 is defined %}
+      {% set state.ipv6 = true %}
+    {% endif %}
+    {% if port.ospf is defined %}
+      {% set state.ospf_areas = state.ospf_areas + [port.ospf.area | string] %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% for vlan in vlans | default([]) %}
+  {% set state.vlan_ids = state.vlan_ids + [vlan.id] %}
+{% endfor %}
+{% for item in physical_ports + (lag | default([])) %}
+  {% if item.mode | default('switched') == 'switched' %}
+    {% if item.untagged_vlan is defined %}
+      {% set state.vlan_ids = state.vlan_ids + [item.untagged_vlan] %}
+    {% endif %}
+    {% if item.tagged_vlan is defined %}
+      {% set state.vlan_ids = state.vlan_ids + (item.tagged_vlan.split() | map('int') | list) %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% for item in lag | default([]) %}
+  {% if item.mode | default('switched') == 'routed' %}
+    {% if item.ipv6 is defined %}
+      {% set state.ipv6 = true %}
+    {% endif %}
+    {% if item.ospf is defined %}
+      {% set state.ospf_areas = state.ospf_areas + [item.ospf.area | string] %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% if bgp is defined %}
+  {% if bgp.networks_ipv6 | default([]) %}
+    {% set state.ipv6 = true %}
+  {% endif %}
+  {% for neighbor in bgp.neighbors %}
+    {% if ':' in neighbor.ip_address %}
+      {% set state.ipv6 = true %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
 hostname educukus-{{ number }}
-{# FastIron privilege 0 grants full administrative access. -#}
+{# FastIron privilege 0 grants full administrative access. #}
 username admin privilege 0 password ruckus
 username provision privilege 0 password ruckus
-{% if jumbo | default(false) -%}
+{% if jumbo | default(false) %}
 jumbo
-{% else -%}
+{% else %}
 no jumbo
-{% endif -%}
-{% if state.ipv6 -%}
+{% endif %}
+{% if state.ipv6 %}
 ipv6 unicast-routing
-{% endif -%}
-{% if bgp is defined and bgp['router-id'] is defined -%}
+{% endif %}
+{% if bgp is defined and bgp['router-id'] is defined %}
 ip router-id {{ bgp['router-id'] }}
-{% elif ospf is defined and ospf['router-id'] is defined -%}
+{% elif ospf is defined and ospf['router-id'] is defined %}
 ip router-id {{ ospf['router-id'] }}
-{% endif -%}
+{% endif %}
 !
 interface management 1
-{{ '  ' }}ip address 198.51.100.2{{ number }} 255.255.255.192
+  ip address 198.51.100.2{{ number }} 255.255.255.192
 exit
 !
-{% if config is defined -%}
+{% if config is defined %}
 {{ config | trim }}
 !
-{% endif -%}
-{% for acl in acls | default([]) -%}
+{% endif %}
+{% for acl in acls | default([]) %}
 ip access-list extended {{ acl.name }}
-{% for line in acl.lines -%}
-{{ '  ' }}{{ line }}
-{% endfor -%}
+  {% for line in acl.lines %}
+  {{ line }}
+  {% endfor %}
 exit
 !
-{% endfor -%}
-{% for item in lag | default([]) -%}
+{% endfor %}
+{% for item in lag | default([]) %}
 lag "{{ item.name }}" {{ item.type | default('dynamic') }} id {{ item.id }}
-{% set member_names = [] -%}
-{% for member in item.members -%}
-{% set _ = member_names.append(interface_name(member)) -%}
-{% endfor -%}
-{{ '  ' }}ports {{ member_names | join(' ') }}
+  {% set member_names = [] %}
+  {% for member in item.members %}
+    {% set _ = member_names.append(interface_name(member)) %}
+  {% endfor %}
+  ports {{ member_names | join(' ') }}
 exit
 !
-{% endfor -%}
-{% for vlan_id in state.vlan_ids | unique | sort -%}
-{% set vlan_names = vlans | default([]) | selectattr('id', 'equalto', vlan_id) | map(attribute='name') | list -%}
+{% endfor %}
+{% for vlan_id in state.vlan_ids | unique | sort %}
+  {% set vlan_names = vlans | default([]) | selectattr('id', 'equalto', vlan_id) | map(attribute='name') | list %}
 vlan {{ vlan_id }}{{ ' name "' ~ vlan_names[0] ~ '"' if vlan_names else '' }} by port
-{% for port in physical_ports if port.mode | default('switched') == 'switched' -%}
-{% if port.untagged_vlan is defined and port.untagged_vlan == vlan_id -%}
-{{ '  ' }}untagged {{ interface_name(port.id) }}
-{% endif -%}
-{% if port.tagged_vlan is defined and vlan_id in (port.tagged_vlan.split() | map('int') | list) -%}
-{{ '  ' }}tagged {{ interface_name(port.id) }}
-{% endif -%}
-{% endfor -%}
-{% for item in lag | default([]) if item.mode | default('switched') == 'switched' -%}
-{% if item.untagged_vlan is defined and item.untagged_vlan == vlan_id -%}
-{{ '  ' }}untagged lag {{ item.id }}
-{% endif -%}
-{% if item.tagged_vlan is defined and vlan_id in (item.tagged_vlan.split() | map('int') | list) -%}
-{{ '  ' }}tagged lag {{ item.id }}
-{% endif -%}
-{% endfor -%}
+  {% for port in physical_ports if port.mode | default('switched') == 'switched' %}
+    {% if port.untagged_vlan is defined and port.untagged_vlan == vlan_id %}
+  untagged {{ interface_name(port.id) }}
+    {% endif %}
+    {% if port.tagged_vlan is defined and vlan_id in (port.tagged_vlan.split() | map('int') | list) %}
+  tagged {{ interface_name(port.id) }}
+    {% endif %}
+  {% endfor %}
+  {% for item in lag | default([]) if item.mode | default('switched') == 'switched' %}
+    {% if item.untagged_vlan is defined and item.untagged_vlan == vlan_id %}
+  untagged lag {{ item.id }}
+    {% endif %}
+    {% if item.tagged_vlan is defined and vlan_id in (item.tagged_vlan.split() | map('int') | list) %}
+  tagged lag {{ item.id }}
+    {% endif %}
+  {% endfor %}
 exit
 !
-{% endfor -%}
-{% if ospf is defined or state.ospf_areas -%}
+{% endfor %}
+{% if ospf is defined or state.ospf_areas %}
 router ospf
-{% if ospf is defined -%}
-{% for area in ospf.areas -%}
-{% if area.type is defined -%}
-{{ '  ' }}area {{ area.area }} {{ area.type }} 1
-{% else -%}
-{{ '  ' }}area {{ area.area }}
-{% endif -%}
-{% endfor -%}
-{% endif -%}
-{% for area_id in state.ospf_areas | unique -%}
-{% if ospf is not defined or area_id not in (ospf.areas | map(attribute='area') | map('string') | list) -%}
-{{ '  ' }}area {{ area_id }}
-{% endif -%}
-{% endfor -%}
-{% if ospf is defined and ospf.config is defined -%}
+  {% if ospf is defined %}
+    {% for area in ospf.areas %}
+      {% if area.type is defined %}
+  area {{ area.area }} {{ area.type }} 1
+      {% else %}
+  area {{ area.area }}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  {% for area_id in state.ospf_areas | unique %}
+    {% if ospf is not defined or area_id not in (ospf.areas | map(attribute='area') | map('string') | list) %}
+  area {{ area_id }}
+    {% endif %}
+  {% endfor %}
+  {% if ospf is defined and ospf.config is defined %}
 {{ ospf.config | trim | indent(2, true) }}
-{% endif -%}
+  {% endif %}
 exit
 !
-{% endif -%}
-{% for port in ports -%}
-{% set ethernet = port.id.startswith('eth') -%}
-{% set routed = not ethernet or port.mode | default('switched') == 'routed' -%}
+{% endif %}
+{% for port in ports %}
+  {% set ethernet = port.id.startswith('eth') %}
+  {% set routed = not ethernet or port.mode | default('switched') == 'routed' %}
 interface {{ interface_name(port.id) }}
-{% if port.description -%}
-{{ '  ' }}port-name {{ port.description }}
-{% else -%}
-{{ '  ' }}no port-name
-{% endif -%}
-{% if ethernet -%}
-{{ '  ' }}speed-duplex {{ '5g-full' if port.speed | default('auto') == '5000-full' else port.speed | default('auto') }}
-{% if routed -%}
-{{ '  ' }}route-only
-{% else -%}
-{{ '  ' }}no route-only
-{% endif -%}
-{% endif -%}
-{% set interface_body = interface_config(port, routed, port.id.startswith('lo')) -%}
-{% if interface_body | trim -%}
+  {% if port.description %}
+  port-name {{ port.description }}
+  {% else %}
+  no port-name
+  {% endif %}
+  {% if ethernet %}
+  speed-duplex {{ '5g-full' if port.speed | default('auto') == '5000-full' else port.speed | default('auto') }}
+    {% if routed %}
+  route-only
+    {% else %}
+  no route-only
+    {% endif %}
+  {% endif %}
+  {% set interface_body = interface_config(port, routed, port.id.startswith('lo')) %}
+  {% if interface_body | trim %}
 {{ interface_body.rstrip() }}
-{% endif -%}
+  {% endif %}
 exit
 !
-{% endfor -%}
-{% for item in lag | default([]) -%}
+{% endfor %}
+{% for item in lag | default([]) %}
 interface lag {{ item.id }}
-{% if item.mode | default('switched') == 'routed' -%}
-{{ '  ' }}route-only
-{% else -%}
-{{ '  ' }}no route-only
-{% endif -%}
-{% set interface_body = interface_config(item, item.mode | default('switched') == 'routed') -%}
-{% if interface_body | trim -%}
+  {% if item.mode | default('switched') == 'routed' %}
+  route-only
+  {% else %}
+  no route-only
+  {% endif %}
+  {% set interface_body = interface_config(item, item.mode | default('switched') == 'routed') %}
+  {% if interface_body | trim %}
 {{ interface_body.rstrip() }}
-{% endif -%}
+  {% endif %}
 exit
 !
-{% endfor -%}
-{% if bgp is defined -%}
+{% endfor %}
+{% if bgp is defined %}
 router bgp
-{{ '  ' }}local-as {{ bgp.local_asn }}
-{% for neighbor in bgp.neighbors -%}
-{{ '  ' }}neighbor {{ neighbor.ip_address }} remote-as {{ neighbor['remote-as'] }}
-{% if neighbor.activate is defined -%}
-{{ '  ' }}{{ '' if neighbor.activate else 'no ' }}neighbor {{ neighbor.ip_address }} activate
-{% endif -%}
-{% if neighbor.config is defined -%}
+  local-as {{ bgp.local_asn }}
+  {% for neighbor in bgp.neighbors %}
+  neighbor {{ neighbor.ip_address }} remote-as {{ neighbor['remote-as'] }}
+    {% if neighbor.activate is defined %}
+  {{ '' if neighbor.activate else 'no ' }}neighbor {{ neighbor.ip_address }} activate
+    {% endif %}
+    {% if neighbor.config is defined %}
 {{ neighbor.config | trim | indent(2, true) }}
-{% endif -%}
-{% endfor -%}
-{% for network in bgp.networks_ipv4 | default([]) -%}
-{{ '  ' }}network {{ network }}
-{% endfor -%}
-{% if bgp.networks_ipv6 is defined -%}
-{{ '  ' }}address-family ipv6 unicast
-{% for network in bgp.networks_ipv6 -%}
-{{ '    ' }}network {{ network }}
-{% endfor -%}
-{{ '  ' }}exit-address-family
-{% endif -%}
-{% if bgp.config is defined -%}
+    {% endif %}
+  {% endfor %}
+  {% for network in bgp.networks_ipv4 | default([]) %}
+  network {{ network }}
+  {% endfor %}
+  {% if bgp.networks_ipv6 is defined %}
+  address-family ipv6 unicast
+    {% for network in bgp.networks_ipv6 %}
+    network {{ network }}
+    {% endfor %}
+  exit-address-family
+  {% endif %}
+  {% if bgp.config is defined %}
 {{ bgp.config | trim | indent(2, true) }}
-{% endif -%}
+  {% endif %}
 exit
 !
-{% endif -%}
+{% endif %}
 end
