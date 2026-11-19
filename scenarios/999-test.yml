@@ -43,15 +43,28 @@ switches:
         untagged_vlan: 2
         tagged_vlan: 10 20
         mtu: 9216
+        acl_in: LAG_ACL1
+        acl_out: LAG_ACL2
+        type: static
     ospf:
       areas:
         - area: 0
+        - area: "20.20.20.0"
+          type: nssa
       router-id: 10.255.254.1
     acls:
       - name: Test_ACL
         lines:
           - permit icmp any 192.168.0.1/32
           - permit tcp any 192.168.0.1/32 eq 443
+          - deny ip any any
+      - name: LAG_ACL1
+        lines:
+          - permit icmp 10.0.0.0/16 172.16.0.0/24
+          - deny ip any any
+      - name: LAG_ACL2
+        lines:
+          - permit icmp 172.16.0.0/24 10.0.0.0/16
           - deny ip any any
   - number: 2
     ports:
@@ -87,6 +100,8 @@ switches:
     ospf:
       areas:
         - area: 0
+        - area: "10.10.10.0"
+          type: stub
       router-id: 10.255.254.2
     bgp:
       local_asn: 65501
@@ -96,8 +111,9 @@ switches:
           remote-as: 65530
         - ip_address: 2001:db8::32da:1
           remote-as: "1.5400"
+          activate: false
       networks_ipv4:
         - 10.255.254.2/32
         - 172.24.1.0/24
       networks_ipv6:
-        - 2001:db8::32da:0/64
+        - 2001:db8::32da:0/56
