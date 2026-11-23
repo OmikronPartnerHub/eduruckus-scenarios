@@ -137,8 +137,14 @@
 {% endif %}
 hostname edurukus-{{ number }}
 {# FastIron privilege 0 grants full administrative access. #}
+!
 username admin privilege 0 password ruckus
 username provision privilege 0 password ruckus
+!
+{# Enabling restconf #}
+restconf enable
+restconf enable-config-sync
+!
 {% if jumbo | default(false) %}
 jumbo
 {% else %}
