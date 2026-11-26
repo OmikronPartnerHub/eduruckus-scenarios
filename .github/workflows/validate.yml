@@ -36,7 +36,7 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: '3.13'
-          
+
       - name: Lint YAML files
         run: |
           for file in $(find . -type f -regextype posix-extended -regex ".*y(a)?ml"); do
