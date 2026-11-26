@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Validate scenarios against scenarios.schema.yml.
-
+"""
+Validate scenarios against scenarios.schema.yml.
 Requires jsonschema and PyYAML. Run with: python3 validate.py
 """
 
 from pathlib import Path
 import sys
-
 import jsonschema
 import yaml
 
@@ -18,6 +17,7 @@ def load_yaml(path):
 
 
 def main():
+    """Main function"""
     root = Path(__file__).resolve().parent
     schema_path = root / "scenarios.schema.yml"
     try:
