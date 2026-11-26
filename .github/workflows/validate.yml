@@ -46,7 +46,7 @@ jobs:
 
       - name: Lint Python scripts
         run: |
-          python3 -m pip install pylint
+          python3 -m pip install pylint jsonschema PyYAML
           for file in $(find . -type f -name *py); do
             echo "Linting $file"
             pylint "$file"
