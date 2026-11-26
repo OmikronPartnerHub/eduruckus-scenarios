@@ -32,6 +32,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+          
       - name: Lint YAML files
         run: |
           for file in $(find . -type f -regextype posix-extended -regex ".*y(a)?ml"); do
@@ -41,6 +46,7 @@ jobs:
 
       - name: Lint Python scripts
         run: |
+          python3 -m pip install pylint
           for file in $(find . -type f -name *py); do
             echo "Linting $file"
             pylint "$file"
